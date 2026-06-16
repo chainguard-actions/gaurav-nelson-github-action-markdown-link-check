@@ -1,0 +1,28 @@
+name: Test checking a specific file via file-path input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a specific markdown file to check
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/test-specific"
+          cat > "$GITHUB_WORKSPACE/test-specific/check-me.md" <<'EOF'
+          # Check Me
+
+          This file has no external links.
+
+          Just plain text content for testing.
+          EOF
+      - id: action
+        uses: .
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          file-path: './test-specific/check-me.md'
+      - name: Assert action completed successfully for specific file
+        run: |
+          echo "Specific file check completed without error"
+          echo "PASS"

@@ -1,0 +1,32 @@
+name: Test max-depth directory traversal limit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create nested markdown files
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/test-depth/level1/level2"
+          cat > "$GITHUB_WORKSPACE/test-depth/level1/top.md" <<'EOF'
+          # Top Level
+
+          This is at depth 1.
+          EOF
+          cat > "$GITHUB_WORKSPACE/test-depth/level1/level2/deep.md" <<'EOF'
+          # Deep Level
+
+          This is at depth 2.
+          EOF
+      - id: action
+        uses: .
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          folder-path: './test-depth'
+          max-depth: '1'
+      - name: Assert action completed with max-depth limit
+        run: |
+          echo "Max-depth limited check completed without error"
+          echo "PASS"

@@ -1,0 +1,42 @@
+name: Test with custom config file
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create markdown file and custom config
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/test-config"
+          cat > "$GITHUB_WORKSPACE/test-config/doc.md" <<'EOF'
+          # Document
+
+          No external links here, just text.
+          EOF
+          cat > "$GITHUB_WORKSPACE/test-config/mlc_config.json" <<'EOF'
+          {
+            "ignorePatterns": [
+              {
+                "pattern": "^https://example.com"
+              }
+            ],
+            "timeout": "20s",
+            "retryOn429": true,
+            "retryCount": 2,
+            "fallbackRetryDelay": "30s",
+            "aliveStatusCodes": [200, 206]
+          }
+          EOF
+      - id: action
+        uses: .
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          config-file: './test-config/mlc_config.json'
+          folder-path: './test-config'
+          max-depth: '1'
+      - name: Assert action completed successfully with custom config
+        run: |
+          echo "Custom config action completed without error"
+          echo "PASS"

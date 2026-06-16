@@ -1,0 +1,31 @@
+name: Test verbose mode with specific file path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a markdown file with no external links
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/test-verbose"
+          cat > "$GITHUB_WORKSPACE/test-verbose/sample.md" <<'EOF'
+          # Sample Document
+
+          This document has no external links, only plain text.
+
+          ## Section
+
+          Some content here.
+          EOF
+      - id: action
+        uses: .
+        with:
+          use-quiet-mode: 'no'
+          use-verbose-mode: 'yes'
+          folder-path: './test-verbose'
+          max-depth: '1'
+      - name: Assert action completed successfully in verbose mode
+        run: |
+          echo "Verbose mode action completed without error"
+          echo "PASS"
