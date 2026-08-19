@@ -1,0 +1,36 @@
+name: Test quiet mode
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create test markdown file with valid anchor links
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tests/tmp-quiet"
+          cat > "$GITHUB_WORKSPACE/tests/tmp-quiet/test.md" <<'EOF'
+          # Quiet Mode Test
+
+          ## Introduction
+
+          This file tests quiet mode.
+
+          [Introduction](#introduction)
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          config-file: 'tests/fixtures/mlc_config_no_network.json'
+          folder-path: 'tests/tmp-quiet'
+          max-depth: '1'
+          check-modified-files-only: 'no'
+          file-extension: '.md'
+
+      - name: Assert action succeeded in quiet mode
+        run: |
+          echo "PASS: markdown-link-check completed successfully in quiet mode"

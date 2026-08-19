@@ -1,0 +1,43 @@
+name: Test broken link detection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create test markdown file with a broken relative file link
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tests/tmp-broken"
+          cat > "$GITHUB_WORKSPACE/tests/tmp-broken/broken.md" <<'EOF'
+          # Broken Link Test
+
+          This file has a broken relative link to a file that does not exist.
+
+          [Missing File](./this-file-does-not-exist.md)
+          EOF
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          use-quiet-mode: 'no'
+          use-verbose-mode: 'no'
+          config-file: 'tests/fixtures/mlc_config_no_network.json'
+          folder-path: 'tests/tmp-broken'
+          max-depth: '1'
+          check-modified-files-only: 'no'
+          file-extension: '.md'
+
+      - name: Assert action failed due to broken links
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly detected broken links and failed"
+          else
+            echo "FAIL: expected action to fail due to broken links, but got outcome '$OUTCOME'"
+            exit 1
+          fi

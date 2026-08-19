@@ -1,0 +1,44 @@
+name: Test max-depth directory scanning
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create nested markdown files for depth testing
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tests/tmp-depth/subdir"
+          # File at depth 1 (directly in tmp-depth) - should be checked with maxdepth=1
+          cat > "$GITHUB_WORKSPACE/tests/tmp-depth/top.md" <<'EOF'
+          # Top Level File
+
+          ## Content
+
+          This file is at the top level.
+
+          [Content](#content)
+          EOF
+          # File at depth 2 (in subdir) - should NOT be checked with maxdepth=1
+          # If it were checked, it would fail due to broken relative link
+          cat > "$GITHUB_WORKSPACE/tests/tmp-depth/subdir/deep.md" <<'EOF'
+          # Deep File
+
+          [Missing File](./this-file-does-not-exist-at-all.md)
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          use-quiet-mode: 'no'
+          use-verbose-mode: 'no'
+          config-file: 'tests/fixtures/mlc_config_no_network.json'
+          folder-path: 'tests/tmp-depth'
+          max-depth: '1'
+          check-modified-files-only: 'no'
+          file-extension: '.md'
+
+      - name: Assert action succeeded (deep broken file was excluded by max-depth=1)
+        run: |
+          echo "PASS: markdown-link-check completed with max-depth=1, only top-level file was checked"

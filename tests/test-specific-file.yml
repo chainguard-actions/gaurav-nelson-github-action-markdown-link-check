@@ -1,0 +1,37 @@
+name: Test specific file path input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create specific test markdown file
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tests/tmp-specific"
+          cat > "$GITHUB_WORKSPACE/tests/tmp-specific/specific.md" <<'EOF'
+          # Specific File Test
+
+          ## Details
+
+          Testing the file-path input.
+
+          [Details](#details)
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          use-quiet-mode: 'no'
+          use-verbose-mode: 'no'
+          config-file: 'tests/fixtures/mlc_config_no_network.json'
+          folder-path: 'tests/tmp-specific'
+          max-depth: '1'
+          check-modified-files-only: 'no'
+          file-extension: '.md'
+          file-path: 'tests/tmp-specific/specific.md'
+
+      - name: Assert action succeeded with specific file
+        run: |
+          echo "PASS: markdown-link-check completed successfully for specific file"
