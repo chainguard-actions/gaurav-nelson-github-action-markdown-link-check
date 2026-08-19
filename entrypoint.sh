@@ -95,9 +95,8 @@ check_errors () {
          cat error.txt
          printf "\n"
          echo -e "${YELLOW}=========================================================================${NC}"
-         echo "MLC_OUTPUT<<EOF" >> "$GITHUB_ENV"
-         cat error.txt >> "$GITHUB_ENV"
-         echo "EOF" >> "$GITHUB_ENV"
+         safe_output=$(printf '%s' "$(cat error.txt)" | tr -d '\n\r')
+         echo "MLC_OUTPUT=${safe_output}" >> "$GITHUB_ENV"
          exit 113
       else
          echo -e "${YELLOW}=========================> MARKDOWN LINK CHECK <=========================${NC}"

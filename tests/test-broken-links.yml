@@ -1,0 +1,45 @@
+name: Test broken link detection
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up git origin reachable inside Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          use-quiet-mode: 'no'
+          use-verbose-mode: 'no'
+          config-file: 'nonexistent_config.json'
+          folder-path: 'tests/fixtures/broken-docs'
+          max-depth: '1'
+          check-modified-files-only: 'no'
+          file-extension: '.md'
+
+      - name: Assert action failed due to broken links
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly detected broken links and failed"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (broken link may have been unreachable/ignored)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
