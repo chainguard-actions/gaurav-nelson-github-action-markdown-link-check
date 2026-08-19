@@ -95,10 +95,12 @@ check_errors () {
          cat error.txt
          printf "\n"
          echo -e "${YELLOW}=========================================================================${NC}"
-         _mlc_delim="$(openssl rand -hex 16)"
-         printf 'MLC_OUTPUT<<%s\n' "$_mlc_delim" >> "$GITHUB_ENV"
-         cat error.txt >> "$GITHUB_ENV"
-         printf '%s\n' "$_mlc_delim" >> "$GITHUB_ENV"
+         mlc_delimiter="mlc_$(openssl rand -hex 16)"
+         {
+            printf 'MLC_OUTPUT<<%s\n' "$mlc_delimiter"
+            cat error.txt
+            printf '%s\n' "$mlc_delimiter"
+         } >> "$GITHUB_OUTPUT"
          exit 113
       else
          echo -e "${YELLOW}=========================> MARKDOWN LINK CHECK <=========================${NC}"
@@ -186,7 +188,8 @@ if [ "$CHECK_MODIFIED_FILES" = "yes" ]; then
       do
          if [ "${i##*.}" == "${FILE_EXTENSION#.}" ]; then
             FIND_CALL+=("${i}")
-            "${FIND_CALL[@]}" &>> error.txt || true
+            COMMAND="${FIND_CALL[*]}"
+            $COMMAND &>> error.txt || true
             unset 'FIND_CALL[${#FIND_CALL[@]}-1]'
          fi
       done

@@ -1,4 +1,4 @@
-name: Test checking a specific file via file-path input
+name: Test specific file markdown link check
 on:
   workflow_dispatch:
 jobs:
@@ -6,23 +6,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Create a specific markdown file to check
+
+      - name: Set up a git origin reachable inside the Docker container
         run: |
-          mkdir -p "$GITHUB_WORKSPACE/test-specific"
-          cat > "$GITHUB_WORKSPACE/test-specific/check-me.md" <<'EOF'
-          # Check Me
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
 
-          This file has no external links.
-
-          Just plain text content for testing.
-          EOF
       - id: action
         uses: .
         with:
-          use-quiet-mode: 'yes'
+          use-quiet-mode: 'no'
           use-verbose-mode: 'no'
-          file-path: './test-specific/check-me.md'
-      - name: Assert action completed successfully for specific file
+          file-path: 'tests/fixtures/valid-links.md'
+          folder-path: 'tests/fixtures'
+          file-extension: '.md'
+          max-depth: '1'
+
+      - name: Assert output indicates success for specific file
+        env:
+          ACTUAL: ${{ steps.action.outputs.MLC_OUTPUT }}
         run: |
-          echo "Specific file check completed without error"
-          echo "PASS"
+          echo "actual: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected MLC_OUTPUT to be set"
+            exit 1
+          fi
+          if echo "$ACTUAL" | grep -qi "ERROR"; then
+            echo "FAIL: unexpected errors in output: $ACTUAL"
+            exit 1
+          fi
+          echo "PASS: specific file check succeeded with: $ACTUAL"
